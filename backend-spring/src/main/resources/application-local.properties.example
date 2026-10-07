@@ -1,7 +1,7 @@
 # Conexión a la base de datos PostgreSQL local
 spring.datasource.url=jdbc:postgresql://localhost:5432/gastromind_db
 spring.datasource.username=postgres
-spring.datasource.password=postgres
+spring.datasource.password=TU_PASSWORD_AQUI
 
 # Configuración Hibernate / JPA
 spring.jpa.hibernate.ddl-auto=update
@@ -9,5 +9,5 @@ spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 
 # JWT Configuration
-gastromind.jwt.secret=GastroMindSecretKeyForJWTTokenGeneration2026ChangedForSecurity
+gastromind.jwt.secret=TU_JWT_SECRET_AQUI
 gastromind.jwt.expiration-ms=86400000
