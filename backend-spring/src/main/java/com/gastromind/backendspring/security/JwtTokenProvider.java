@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.Map;
 
 @Component
 public class JwtTokenProvider {
@@ -33,5 +34,45 @@ public class JwtTokenProvider {
                 .setExpiration(fechaExpiracion)
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parserBuilder()
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(token);
+            return true;
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    public Long getEmpleadoIdFromToken(String token) {
+        Claims claims = getClaims(token);
+        return claims.get("usuario_id", Long.class);
+    }
+
+    public Integer getRolIdFromToken(String token) {
+        Claims claims = getClaims(token);
+        return claims.get("rol_id", Integer.class);
+    }
+
+    public Long getRestauranteIdFromToken(String token) {
+        Claims claims = getClaims(token);
+        return claims.get("restaurante_id", Long.class);
+    }
+
+    public String getCorreoFromToken(String token) {
+        Claims claims = getClaims(token);
+        return claims.getSubject();
+    }
+
+    private Claims getClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
 }
