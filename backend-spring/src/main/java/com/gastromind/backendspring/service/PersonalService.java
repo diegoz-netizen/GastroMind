@@ -78,14 +78,15 @@ public class PersonalService {
     }
 
     /**
-     * El nombre del principal autenticado es el correo (subject del JWT de HU-02).
+     * El principal autenticado es el id del empleado (lo pone el JwtAuthenticationFilter de HU-02).
      * Se consulta la BD en cada petición para exigir que siga ACTIVO y sea ADMINISTRADOR.
      */
     private Empleado administradorActual(Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated() || authentication.getName() == null) {
+        if (authentication == null || !authentication.isAuthenticated()
+                || !(authentication.getPrincipal() instanceof Long empleadoId)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Autenticación requerida");
         }
-        Empleado actual = personalRepository.findByCorreo(authentication.getName())
+        Empleado actual = personalRepository.findById(empleadoId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Identidad no válida"));
         if (!EstadoEmpleado.ACTIVO.name().equals(actual.getEstado())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Su cuenta se encuentra inactiva");

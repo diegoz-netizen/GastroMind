@@ -55,16 +55,16 @@ class PersonalServiceTest {
                 .passwordHash("hash-mozo").pinAcceso("hash-pin").estado("ACTIVO").build();
     }
 
-    private Authentication autenticado(String correo) {
-        return new UsernamePasswordAuthenticationToken(correo, null, List.of());
+    private Authentication autenticado(Long empleadoId) {
+        return new UsernamePasswordAuthenticationToken(empleadoId, null, List.of());
     }
 
     @Test
     void listar_devuelveSoloEmpleadosDelRestauranteDelAdmin() {
-        when(personalRepository.findByCorreo("admin@resto1.com")).thenReturn(Optional.of(admin));
+        when(personalRepository.findById(1L)).thenReturn(Optional.of(admin));
         when(personalRepository.findByRestauranteIdOrderByIdAsc(1L)).thenReturn(List.of(admin, mozo));
 
-        List<EmpleadoResumen> resultado = personalService.listar(autenticado("admin@resto1.com"));
+        List<EmpleadoResumen> resultado = personalService.listar(autenticado(1L));
 
         assertEquals(2, resultado.size());
         assertEquals("mozo@resto1.com", resultado.get(1).getCorreo());
@@ -73,10 +73,10 @@ class PersonalServiceTest {
 
     @Test
     void cambiarEstado_desactivaSinBorrarYRegistraHistorial() {
-        when(personalRepository.findByCorreo("admin@resto1.com")).thenReturn(Optional.of(admin));
+        when(personalRepository.findById(1L)).thenReturn(Optional.of(admin));
         when(personalRepository.findByIdAndRestauranteId(2L, 1L)).thenReturn(Optional.of(mozo));
 
-        EmpleadoResumen resultado = personalService.cambiarEstado(2L, "INACTIVO", autenticado("admin@resto1.com"));
+        EmpleadoResumen resultado = personalService.cambiarEstado(2L, "INACTIVO", autenticado(1L));
 
         assertEquals("INACTIVO", resultado.getEstado());
         assertEquals("INACTIVO", mozo.getEstado());
@@ -91,21 +91,21 @@ class PersonalServiceTest {
 
     @Test
     void cambiarEstado_mismoEstadoNoRegistraHistorial() {
-        when(personalRepository.findByCorreo("admin@resto1.com")).thenReturn(Optional.of(admin));
+        when(personalRepository.findById(1L)).thenReturn(Optional.of(admin));
         when(personalRepository.findByIdAndRestauranteId(2L, 1L)).thenReturn(Optional.of(mozo));
 
-        personalService.cambiarEstado(2L, "ACTIVO", autenticado("admin@resto1.com"));
+        personalService.cambiarEstado(2L, "ACTIVO", autenticado(1L));
 
         verify(historialRepository, never()).save(any());
     }
 
     @Test
     void cambiarEstado_empleadoDeOtroRestauranteDa404() {
-        when(personalRepository.findByCorreo("admin@resto1.com")).thenReturn(Optional.of(admin));
+        when(personalRepository.findById(1L)).thenReturn(Optional.of(admin));
         when(personalRepository.findByIdAndRestauranteId(99L, 1L)).thenReturn(Optional.empty());
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
-                () -> personalService.cambiarEstado(99L, "INACTIVO", autenticado("admin@resto1.com")));
+                () -> personalService.cambiarEstado(99L, "INACTIVO", autenticado(1L)));
 
         assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
     }
@@ -113,7 +113,7 @@ class PersonalServiceTest {
     @Test
     void cambiarEstado_estadoInvalidoDa400() {
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
-                () -> personalService.cambiarEstado(2L, "BORRADO", autenticado("admin@resto1.com")));
+                () -> personalService.cambiarEstado(2L, "BORRADO", autenticado(1L)));
 
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
         verifyNoInteractions(personalRepository);
@@ -121,10 +121,10 @@ class PersonalServiceTest {
 
     @Test
     void noAdministradorDa403() {
-        when(personalRepository.findByCorreo("mozo@resto1.com")).thenReturn(Optional.of(mozo));
+        when(personalRepository.findById(2L)).thenReturn(Optional.of(mozo));
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
-                () -> personalService.listar(autenticado("mozo@resto1.com")));
+                () -> personalService.listar(autenticado(2L)));
 
         assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
     }
@@ -132,10 +132,10 @@ class PersonalServiceTest {
     @Test
     void adminInactivoDa401() {
         admin.setEstado("INACTIVO");
-        when(personalRepository.findByCorreo("admin@resto1.com")).thenReturn(Optional.of(admin));
+        when(personalRepository.findById(1L)).thenReturn(Optional.of(admin));
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
-                () -> personalService.listar(autenticado("admin@resto1.com")));
+                () -> personalService.listar(autenticado(1L)));
 
         assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatusCode());
     }
