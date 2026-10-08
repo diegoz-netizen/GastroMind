@@ -21,7 +21,7 @@
 | **Sprint** | 1 · semanas 7-8 |
 | **Rama** | `feature/HU-03-estado-empleados` (desde `feature/HU-02-login`) |
 | **Estimación** | 9 h (Sprint Backlog) |
-| **Actualizado** | 05/10/2026 |
+| **Actualizado** | 08/10/2026 |
 
 ---
 
@@ -43,7 +43,7 @@ Reglas que cumple la implementación:
 | # | Tarea | h | Estado |
 |---|---|:-:|---|
 | 1 | Agregar el campo estado (activo/inactivo) al modelo de usuario | 2 | ✅ `Empleado.estado` + enum `EstadoEmpleado` |
-| 2 | Crear la vista de listado con opción de activar/desactivar | 3 | 🟡 API lista · vista según el cliente que elija el equipo |
+| 2 | Crear la vista de listado con opción de activar/desactivar | 3 | 🟡 API + vista `Empleados.jsx` listas · falta la ruta y el CORS (HU-02) |
 | 3 | Implementar la lógica para bloquear el acceso de usuarios inactivos | 2 | ✅ Login (HU-02) + revalidación en cada petición de HU-03 |
 | 4 | Registrar el historial de cambios de estado de cada usuario | 2 | ✅ Tabla `historial_estado_empleado` |
 
@@ -59,7 +59,7 @@ sequenceDiagram
     A->>C: PATCH /api/empleados/{id}/estado
     C->>S: cambiarEstado(id, estado, auth)
     S->>S: Valida estado (ACTIVO / INACTIVO)
-    S->>DB: Busca admin por correo del token
+    S->>DB: Busca admin por id del token
     DB-->>S: Admin (estado, rol, restaurante)
     Note over S: ¿ACTIVO y ADMINISTRADOR?<br/>si no → 401 / 403
     S->>DB: Busca empleado en SU restaurante
@@ -104,8 +104,8 @@ Content-Type: application/json
 |:-:|---|
 | `200` | Cambio realizado. Si ya tenía ese estado, responde igual y no duplica el historial |
 | `400` | Estado vacío o distinto de `ACTIVO` / `INACTIVO` |
-| `401` | Sin autenticación, o el admin está inactivo |
-| `403` | El usuario no es ADMINISTRADOR |
+| `401` | El admin está inactivo |
+| `403` | El usuario no es ADMINISTRADOR, o la petición llega sin token (la corta Spring Security) |
 | `404` | El empleado no existe **en su restaurante** (no revela si existe en otro) |
 
 ## 🗂️ Estructura
@@ -121,6 +121,7 @@ backend-spring/src/main/java/com/gastromind/backendspring/
 └── service/     PersonalService.java
 
 backend-spring/src/test/java/.../service/PersonalServiceTest.java
+web-react/src/pages/Empleados.jsx
 docs/HU-03/      README.md · historial_estado_empleado.sql
 ```
 
@@ -169,19 +170,44 @@ cd backend-spring
 | Usuario sin rol admin | `403` |
 | Admin inactivo / sin autenticación | `401` |
 
-**Resultado (05/10/2026):** 14 pruebas, 0 fallos (8 de HU-03 + 6 de HU-02).
+**Resultado (08/10/2026):** 14 pruebas, 0 fallos (8 de HU-03 + 6 de HU-02), en local y en el CI de GitHub Actions.
+
+### Probar con Postman
+
+Requiere un ADMINISTRADOR activo en la BD (contraseña con hash BCrypt) y el backend corriendo en `localhost:8080`.
+
+1. **Login** — `POST /api/auth/login` con `{ "correo": "...", "password": "..." }`. Copiar el `token` de la respuesta.
+2. **Listar** — `GET /api/empleados` con el header `Authorization: Bearer <token>`. Devuelve solo el personal de su restaurante.
+3. **Desactivar** — `PATCH /api/empleados/{id}/estado` con el mismo header y `{ "estado": "INACTIVO" }`.
+4. **Comprobar el CA-03** — hacer login con el empleado desactivado: `401` *"Su cuenta se encuentra inactiva"*.
+5. **Reactivar** — repetir el paso 3 con `{ "estado": "ACTIVO" }`; el empleado vuelve a entrar.
+6. **Aislamiento** — pedir el `PATCH` de un empleado de otro restaurante: `404`.
+
+> ⚠️ Mientras `/error` no esté en el `permitAll` de `SecurityConfig` (HU-02), los errores (`400`, `404`, `401`, `403`) llegan como **`403` sin cuerpo**. Los códigos de la tabla de arriba se verificaron con `/error` permitido.
+
+## 🖥️ Vista web
+
+`web-react/src/pages/Empleados.jsx`: tabla con el personal del restaurante y un botón para activar o desactivar cada empleado. Muestra el mensaje del backend cuando hay error y nunca pide ni muestra contraseñas.
+
+Para usarla falta, en archivos de HU-02:
+
+- La ruta `/empleados` (protegida con `PrivateRoute`) en `App.jsx`.
+- CORS global en `SecurityConfig` (`.cors(...)`): el login funciona porque `/api/auth/**` es público, pero el *preflight* del navegador a `/api/empleados` hoy responde `403`.
+
+Con esos dos cambios, aplicados en una copia local, las peticiones que hace la vista (preflight CORS, listar, desactivar y reactivar) respondieron correctamente.
 
 ## 🤝 Integración con el equipo
 
 | Con | Punto de integración |
 |---|---|
-| **HU-02** · Inicio de sesión | El nombre del usuario autenticado es su **correo** (el `subject` del JWT). Los endpoints de HU-03 responden cuando la petición llega autenticada por el filtro JWT. |
+| **HU-02** · Inicio de sesión | El filtro JWT pone como principal el **id** del empleado. HU-03 lo busca en la BD en cada petición y exige que siga ACTIVO y sea ADMINISTRADOR. |
 | **HU-02** · Revocación | Para que un desactivado pierda acceso a *todos* los endpoints con un token anterior, el filtro JWT debe consultar el estado en cada petición. HU-03 ya lo hace en los suyos. |
 | **HU-01** · Registro | El `POST /api/empleados` puede ir en otro controlador sobre la misma ruta, sin repetir los mapeos `GET` y `PATCH`. |
 
 ## 📌 Pendiente
 
-- [ ] Vista con el switch de estado, cuando el equipo defina el cliente (React o Kotlin).
+- [x] Vista web `Empleados.jsx` (React).
+- [ ] Ruta `/empleados` y CORS global (HU-02).
 - [ ] Decidir con el PO si un admin puede desactivarse a sí mismo.
 - [ ] Decidir si se puede desactivar al último admin activo del restaurante.
 - [ ] Acordar quién aplica los scripts del esquema compartido.
