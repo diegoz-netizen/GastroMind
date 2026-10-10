@@ -24,8 +24,9 @@ public class EmpleadoController {
             @Valid @RequestBody EmpleadoRegistroRequest request,
             Authentication authentication) {
 
-        String correoAdmin = authentication.getName(); // Trae el correo extraído del JWT
-        EmpleadoResponse respuesta = empleadoService.registrarEmpleado(request, correoAdmin);
+        // authentication.getName() devuelve el ID del admin (ej. "1"), no el correo
+        String adminIdStr = authentication.getName();
+        EmpleadoResponse respuesta = empleadoService.registrarEmpleado(request, adminIdStr);
         return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
     }
 }

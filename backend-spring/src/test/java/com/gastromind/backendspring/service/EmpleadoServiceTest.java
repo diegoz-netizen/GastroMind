@@ -47,9 +47,15 @@ class EmpleadoServiceTest {
         restauranteMock = new Restaurante();
         restauranteMock.setId(1L);
 
+        Rol rolAdmin = new Rol();
+        rolAdmin.setId(1L);
+        rolAdmin.setNombre("ADMINISTRADOR");
+
         adminMock = new Empleado();
         adminMock.setId(1L);
         adminMock.setCorreo("admin@restaurante.com");
+        adminMock.setRol(rolAdmin);
+        adminMock.setEstado("ACTIVO");
         adminMock.setRestaurante(restauranteMock);
 
         rolMock = new Rol();
@@ -60,10 +66,10 @@ class EmpleadoServiceTest {
     @Test
     void registrarEmpleado_Exito() {
         EmpleadoRegistroRequest request = new EmpleadoRegistroRequest(
-                "Carlos Perez", "carlos@restaurante.com", "password123", 2L, null
+                "Carlos Perez", "carlos@restaurante.com", "password123", 2L, "1234"
         );
 
-        when(empleadoRepository.findByCorreo("admin@restaurante.com")).thenReturn(Optional.of(adminMock));
+        when(empleadoRepository.findById(1L)).thenReturn(Optional.of(adminMock));
         when(empleadoRepository.existsByCorreo("carlos@restaurante.com")).thenReturn(false);
         when(rolRepository.findById(2L)).thenReturn(Optional.of(rolMock));
         when(passwordEncoder.encode("password123")).thenReturn("encodedPassword");
@@ -73,26 +79,26 @@ class EmpleadoServiceTest {
             return e;
         });
 
-        EmpleadoResponse response = empleadoService.registrarEmpleado(request, "admin@restaurante.com");
+        EmpleadoResponse response = empleadoService.registrarEmpleado(request, "1");
 
         assertNotNull(response);
         assertEquals("Carlos Perez", response.nombreCompleto());
         assertEquals("ACTIVO", response.estado());
-        assertEquals("COCINERO", response.nombreRol());
+        assertEquals("COCINERO", response.rol());
         verify(empleadoRepository, times(1)).save(any(Empleado.class));
     }
 
     @Test
     void registrarEmpleado_CorreoDuplicado_LanzaExcepcion() {
         EmpleadoRegistroRequest request = new EmpleadoRegistroRequest(
-                "Carlos Perez", "duplicado@restaurante.com", "password123", 2L, null
+                "Carlos Perez", "duplicado@restaurante.com", "password123", 2L, "1234"
         );
 
-        when(empleadoRepository.findByCorreo("admin@restaurante.com")).thenReturn(Optional.of(adminMock));
+        when(empleadoRepository.findById(1L)).thenReturn(Optional.of(adminMock));
         when(empleadoRepository.existsByCorreo("duplicado@restaurante.com")).thenReturn(true);
 
         assertThrows(ResponseStatusException.class, () ->
-                empleadoService.registrarEmpleado(request, "admin@restaurante.com")
+                empleadoService.registrarEmpleado(request, "1")
         );
     }
 }

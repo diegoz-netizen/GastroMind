@@ -4,5 +4,5 @@ import com.gastromind.backendspring.dto.EmpleadoRegistroRequest;
 import com.gastromind.backendspring.dto.EmpleadoResponse;
 
 public interface EmpleadoService {
-    EmpleadoResponse registrarEmpleado(EmpleadoRegistroRequest request, String correoAdminAutenticado);
+    EmpleadoResponse registrarEmpleado(EmpleadoRegistroRequest request, String adminIdStr);
 }
