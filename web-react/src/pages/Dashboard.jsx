@@ -1,7 +1,9 @@
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 function Dashboard() {
   const { auth, logout } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div style={styles.container}>
@@ -18,6 +20,12 @@ function Dashboard() {
             {auth.token ? auth.token.substring(0, 60) + '...' : 'No hay token'}
           </code>
         </div>
+
+        {auth.rol === 'ADMINISTRADOR' && (
+          <button onClick={() => navigate('/empleados')} style={styles.primaryButton}>
+            Gestionar empleados
+          </button>
+        )}
 
         <button onClick={logout} style={styles.logoutButton}>
           Cerrar sesion
@@ -73,6 +81,18 @@ const styles = {
     fontSize: '11px',
     color: '#3c4043',
     wordBreak: 'break-all',
+  },
+  primaryButton: {
+    marginTop: '24px',
+    marginRight: '12px',
+    padding: '10px 24px',
+    fontSize: '14px',
+    fontWeight: '500',
+    backgroundColor: '#1a73e8',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
   },
   logoutButton: {
     marginTop: '24px',
