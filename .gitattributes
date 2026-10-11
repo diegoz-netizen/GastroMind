@@ -1,0 +1,3 @@
+# Los scripts de shell deben quedar con LF también en Windows:
+# con CRLF, bash toma el retorno de carro como parte de cada línea.
+*.sh text eol=lf
