@@ -1,5 +1,6 @@
 package com.gastromind.backendspring.security;
 
+import com.gastromind.backendspring.repository.EmpleadoRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,9 +20,11 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final EmpleadoRepository empleadoRepository;
 
-    public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider) {
+    public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider, EmpleadoRepository empleadoRepository) {
         this.jwtTokenProvider = jwtTokenProvider;
+        this.empleadoRepository = empleadoRepository;
     }
 
     @Override
@@ -33,20 +36,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
             Long empleadoId = jwtTokenProvider.getEmpleadoIdFromToken(token);
-            Integer rolId = jwtTokenProvider.getRolIdFromToken(token);
             Long restauranteId = jwtTokenProvider.getRestauranteIdFromToken(token);
 
-            List<SimpleGrantedAuthority> authorities = List.of(
-                    new SimpleGrantedAuthority("ROLE_empleado"),
-                    new SimpleGrantedAuthority("ROLE_restaurante_" + restauranteId)
-            );
+            // Un token valido no basta: el empleado debe seguir ACTIVO en la BD
+            boolean activo = empleadoId != null && empleadoRepository.findById(empleadoId)
+                    .map(empleado -> "ACTIVO".equalsIgnoreCase(empleado.getEstado()))
+                    .orElse(false);
 
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(empleadoId, null, authorities);
+            if (activo) {
+                List<SimpleGrantedAuthority> authorities = List.of(
+                        new SimpleGrantedAuthority("ROLE_empleado"),
+                        new SimpleGrantedAuthority("ROLE_restaurante_" + restauranteId)
+                );
 
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(empleadoId, null, authorities);
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
         }
 
         filterChain.doFilter(request, response);
