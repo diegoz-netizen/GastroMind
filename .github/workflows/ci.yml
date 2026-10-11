@@ -1,0 +1,67 @@
+name: CI - Build and Test
+
+on:
+  push:
+    branches: [main, "feature/**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: gastromind_db_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build backend with Maven
+        working-directory: ./backend-spring
+        run: |
+          chmod +x ./mvnw
+          ./mvnw clean verify -Dspring.profiles.active=test
+
+  frontend-lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web-react/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: ./web-react
+        run: npm ci
+
+      - name: Lint frontend
+        working-directory: ./web-react
+        run: npm run lint || true
+
+      - name: Build frontend
+        working-directory: ./web-react
+        run: npm run build

@@ -1,0 +1,232 @@
+-- ============================================================
+-- GASTROMIND — Script de Base de Datos (PostgreSQL)
+-- Basado en el modelo ER definido en la planificación Scrum
+-- ============================================================
+
+-- ---------- RESTAURANTE ----------
+CREATE TABLE restaurante (
+    id              SERIAL PRIMARY KEY,
+    nombre          VARCHAR(150) NOT NULL
+);
+
+-- ---------- ROL ----------
+CREATE TABLE rol (
+    id              SERIAL PRIMARY KEY,
+    nombre          VARCHAR(50) NOT NULL UNIQUE
+        CHECK (nombre IN ('ADMINISTRADOR', 'COCINERO', 'ALMACENERO', 'MOZO'))
+);
+
+-- ---------- EMPLEADO ----------
+CREATE TABLE empleado (
+    id                  SERIAL PRIMARY KEY,
+    restaurante_id      INT NOT NULL REFERENCES restaurante(id),
+    rol_id              INT NOT NULL REFERENCES rol(id),
+    nombre_completo     VARCHAR(150) NOT NULL,
+    correo              VARCHAR(150) NOT NULL UNIQUE,
+    password_hash       VARCHAR(255) NOT NULL,
+    pin_acceso          VARCHAR(255),              -- hash del PIN, opcional
+    estado              VARCHAR(20) NOT NULL DEFAULT 'ACTIVO'
+        CHECK (estado IN ('ACTIVO', 'INACTIVO')),
+    fecha_registro      TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- ---------- CATEGORIA ----------
+CREATE TABLE categoria (
+    id              SERIAL PRIMARY KEY,
+    restaurante_id  INT NOT NULL REFERENCES restaurante(id),
+    nombre          VARCHAR(100) NOT NULL          -- Platos, Bebidas, Postres, Regalos
+);
+
+-- ---------- PRODUCTO ----------
+CREATE TABLE producto (
+    id                  SERIAL PRIMARY KEY,
+    categoria_id        INT NOT NULL REFERENCES categoria(id),
+    nombre              VARCHAR(150) NOT NULL,
+    precio              DECIMAL(10,2) NOT NULL CHECK (precio >= 0),
+    requiere_receta     BOOLEAN NOT NULL DEFAULT TRUE,
+    estado              VARCHAR(20) NOT NULL DEFAULT 'ACTIVO'
+        CHECK (estado IN ('ACTIVO', 'INACTIVO'))
+);
+
+-- ---------- INGREDIENTE ----------
+-- CRITICO multi-tenant: cada insumo pertenece a UN restaurante. Sin esto,
+-- el stock de un restaurante se mezclaria con el de otro.
+CREATE TABLE ingrediente (
+    id                  SERIAL PRIMARY KEY,
+    restaurante_id      INT NOT NULL REFERENCES restaurante(id),
+    nombre              VARCHAR(150) NOT NULL,
+    unidad_medida       VARCHAR(20) NOT NULL,       -- g, ml, unidades, kg, l
+    stock_actual        DECIMAL(10,2) NOT NULL DEFAULT 0,
+    stock_minimo        DECIMAL(10,2) NOT NULL DEFAULT 0,
+    costo_unitario      DECIMAL(10,2) NOT NULL CHECK (costo_unitario >= 0),
+    tipo_control        VARCHAR(20) NOT NULL DEFAULT 'RECETA'
+        CHECK (tipo_control IN ('RECETA', 'LIBRE')),
+    dotacion_cantidad   DECIMAL(10,2),               -- solo aplica si tipo_control = 'LIBRE'
+    dotacion_periodo    VARCHAR(20)
+        CHECK (dotacion_periodo IN ('SEMANAL', 'MENSUAL')),
+    CONSTRAINT chk_dotacion_libre CHECK (
+        tipo_control = 'RECETA' OR (dotacion_cantidad IS NOT NULL AND dotacion_periodo IS NOT NULL)
+    ),
+    UNIQUE (restaurante_id, nombre)                 -- no se repite el mismo insumo dos veces en un restaurante
+);
+
+-- ---------- RECETA_DETALLE (BOM) ----------
+CREATE TABLE receta_detalle (
+    id                  SERIAL PRIMARY KEY,
+    producto_id         INT NOT NULL REFERENCES producto(id),
+    ingrediente_id      INT NOT NULL REFERENCES ingrediente(id),
+    cantidad_requerida  DECIMAL(10,3) NOT NULL CHECK (cantidad_requerida > 0),
+    UNIQUE (producto_id, ingrediente_id)            -- evita insumo repetido en la misma receta
+);
+
+-- ---------- MESA ----------
+CREATE TABLE mesa (
+    id              SERIAL PRIMARY KEY,
+    restaurante_id  INT NOT NULL REFERENCES restaurante(id),
+    numero          INT NOT NULL,
+    estado          VARCHAR(20) NOT NULL DEFAULT 'LIBRE'
+        CHECK (estado IN ('LIBRE', 'OCUPADA', 'CERRADA')),
+    UNIQUE (restaurante_id, numero)
+);
+
+-- ---------- PROVEEDOR ----------
+-- CRITICO multi-tenant: cada restaurante gestiona su propia lista de proveedores.
+CREATE TABLE proveedor (
+    id              SERIAL PRIMARY KEY,
+    restaurante_id  INT NOT NULL REFERENCES restaurante(id),
+    nombre          VARCHAR(150) NOT NULL,
+    contacto        VARCHAR(150)
+);
+
+-- ---------- MOTIVO_MERMA ----------
+-- Catalogo configurable en vez de CHECK fijo: motivos globales del sistema
+-- (restaurante_id NULL) mas motivos propios que cada restaurante puede agregar.
+CREATE TABLE motivo_merma (
+    id              SERIAL PRIMARY KEY,
+    restaurante_id  INT REFERENCES restaurante(id),   -- NULL = motivo global disponible para todos
+    nombre          VARCHAR(50) NOT NULL,
+    es_global       BOOLEAN NOT NULL DEFAULT FALSE,
+    UNIQUE (restaurante_id, nombre)
+);
+
+-- ---------- PEDIDO ----------
+CREATE TABLE pedido (
+    id              SERIAL PRIMARY KEY,
+    mesa_id         INT NOT NULL REFERENCES mesa(id),
+    empleado_id     INT NOT NULL REFERENCES empleado(id),   -- creado_por: rol Mozo
+    estado          VARCHAR(20) NOT NULL DEFAULT 'ABIERTO'
+        CHECK (estado IN ('ABIERTO', 'EN_PREPARACION', 'SERVIDO', 'CERRADO')),
+    fecha_registro  TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- ---------- PEDIDO_DETALLE ----------
+CREATE TABLE pedido_detalle (
+    id              SERIAL PRIMARY KEY,
+    pedido_id       INT NOT NULL REFERENCES pedido(id) ON DELETE CASCADE,
+    producto_id     INT NOT NULL REFERENCES producto(id),
+    cantidad        INT NOT NULL CHECK (cantidad > 0),
+    estado          VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE'
+        CHECK (estado IN ('PENDIENTE', 'EN_PREPARACION', 'LISTO', 'SERVIDO', 'ANULADO'))
+);
+
+-- ---------- REGISTRO_MERMA ----------
+CREATE TABLE registro_merma (
+    id              SERIAL PRIMARY KEY,
+    empleado_id     INT NOT NULL REFERENCES empleado(id),   -- creado_por: Cocinero/Almacenero
+    ingrediente_id  INT NOT NULL REFERENCES ingrediente(id),
+    cantidad        DECIMAL(10,2) NOT NULL CHECK (cantidad > 0),
+    motivo_id       INT NOT NULL REFERENCES motivo_merma(id),
+    fecha_registro  TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- ---------- REGISTRO_INGRESO_PROVEEDOR ----------
+CREATE TABLE registro_ingreso_proveedor (
+    id                  SERIAL PRIMARY KEY,
+    empleado_id         INT NOT NULL REFERENCES empleado(id),   -- creado_por: Almacenero
+    proveedor_id        INT NOT NULL REFERENCES proveedor(id),
+    ingrediente_id      INT NOT NULL REFERENCES ingrediente(id),
+    lote                VARCHAR(50),
+    cantidad_recibida   DECIMAL(10,2) NOT NULL CHECK (cantidad_recibida > 0),
+    costo_total         DECIMAL(10,2) NOT NULL CHECK (costo_total >= 0),
+    fecha_registro      TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- ---------- CONTEO_CICLICO ----------
+CREATE TABLE conteo_ciclico (
+    id                          SERIAL PRIMARY KEY,
+    empleado_id                 INT NOT NULL REFERENCES empleado(id),   -- creado_por: Almacenero
+    ingrediente_id              INT NOT NULL REFERENCES ingrediente(id),
+    cantidad_fisica_contada     DECIMAL(10,2) NOT NULL,
+    fecha_registro              TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- ============================================================
+-- INTEGRIDAD MULTI-TENANT: un producto de un restaurante NO puede
+-- llevar en su receta un insumo de OTRO restaurante. Un CHECK simple
+-- no puede comparar dos tablas, por eso se usa un trigger.
+-- ============================================================
+CREATE OR REPLACE FUNCTION fn_valida_receta_mismo_restaurante()
+RETURNS TRIGGER AS $$
+DECLARE
+    restaurante_producto INT;
+    restaurante_ingrediente INT;
+BEGIN
+    SELECT c.restaurante_id INTO restaurante_producto
+    FROM producto p JOIN categoria c ON p.categoria_id = c.id
+    WHERE p.id = NEW.producto_id;
+
+    SELECT restaurante_id INTO restaurante_ingrediente
+    FROM ingrediente WHERE id = NEW.ingrediente_id;
+
+    IF restaurante_producto IS DISTINCT FROM restaurante_ingrediente THEN
+        RAISE EXCEPTION 'El producto % y el insumo % pertenecen a restaurantes distintos', NEW.producto_id, NEW.ingrediente_id;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_receta_mismo_restaurante
+    BEFORE INSERT OR UPDATE ON receta_detalle
+    FOR EACH ROW EXECUTE FUNCTION fn_valida_receta_mismo_restaurante();
+
+-- NOTA IMPORTANTE: este trigger es la ultima linea de defensa, no la unica.
+-- En el backend (Spring Boot), TODA consulta debe filtrar por restaurante_id
+-- obtenido del JWT del usuario logueado -- nunca confiar solo en la BD para esto.
+
+-- ============================================================
+-- ÍNDICES recomendados para las FKs más consultadas
+-- ============================================================
+CREATE INDEX idx_empleado_rol ON empleado(rol_id);
+CREATE INDEX idx_ingrediente_restaurante ON ingrediente(restaurante_id);
+CREATE INDEX idx_proveedor_restaurante ON proveedor(restaurante_id);
+CREATE INDEX idx_producto_categoria ON producto(categoria_id);
+CREATE INDEX idx_receta_producto ON receta_detalle(producto_id);
+CREATE INDEX idx_receta_ingrediente ON receta_detalle(ingrediente_id);
+CREATE INDEX idx_pedido_mesa ON pedido(mesa_id);
+CREATE INDEX idx_pedido_empleado ON pedido(empleado_id);
+CREATE INDEX idx_merma_ingrediente ON registro_merma(ingrediente_id);
+CREATE INDEX idx_merma_motivo ON registro_merma(motivo_id);
+CREATE INDEX idx_merma_fecha ON registro_merma(fecha_registro);
+CREATE INDEX idx_ingreso_ingrediente ON registro_ingreso_proveedor(ingrediente_id);
+CREATE INDEX idx_conteo_ingrediente ON conteo_ciclico(ingrediente_id);
+
+-- ============================================================
+-- DATOS INICIALES (seed) — roles fijos del sistema
+-- ============================================================
+INSERT INTO rol (nombre) VALUES
+    ('ADMINISTRADOR'),
+    ('COCINERO'),
+    ('ALMACENERO'),
+    ('MOZO');
+
+-- Motivos de merma globales: disponibles para cualquier restaurante desde el dia 1.
+-- Un restaurante puede agregar los suyos propios insertando con su restaurante_id.
+INSERT INTO motivo_merma (restaurante_id, nombre, es_global) VALUES
+    (NULL, 'QUEMADO', TRUE),
+    (NULL, 'DERRAMADO', TRUE),
+    (NULL, 'VENCIDO', TRUE),
+    (NULL, 'MAL_MANEJO', TRUE),
+    (NULL, 'SOBRANTE', TRUE),
+    (NULL, 'DEVOLUCION', TRUE),
+    (NULL, 'CORTESIA', TRUE),
+    (NULL, 'PLATO_ANULADO', TRUE);
