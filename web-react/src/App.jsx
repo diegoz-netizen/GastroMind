@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import Empleados from './pages/Empleados';
 
 function PrivateRoute({ children }) {
   const { isAuthenticated } = useAuth();
@@ -17,6 +18,14 @@ function AppRoutes() {
         element={
           <PrivateRoute>
             <Dashboard />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/empleados"
+        element={
+          <PrivateRoute>
+            <Empleados />
           </PrivateRoute>
         }
       />
