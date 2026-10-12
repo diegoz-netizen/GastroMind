@@ -11,3 +11,8 @@ spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 # JWT Configuration
 gastromind.jwt.secret=TU_JWT_SECRET_AQUI
 gastromind.jwt.expiration-ms=86400000
+
+# HU-04: SMTP de Mailtrap (Email Testing > Inboxes > SMTP). Mejor como variables de entorno:
+#   export MAIL_USERNAME=... MAIL_PASSWORD=...
+# spring.mail.username=TU_USUARIO_MAILTRAP
+# spring.mail.password=TU_PASSWORD_MAILTRAP

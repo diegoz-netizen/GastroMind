@@ -3,6 +3,8 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Empleados from './pages/Empleados';
+import OlvideContrasena from './pages/OlvideContrasena';
+import RestablecerContrasena from './pages/RestablecerContrasena';
 
 function PrivateRoute({ children }) {
   const { isAuthenticated } = useAuth();
@@ -13,6 +15,8 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Login />} />
+      <Route path="/recuperar" element={<OlvideContrasena />} />
+      <Route path="/restablecer" element={<RestablecerContrasena />} />
       <Route
         path="/dashboard"
         element={
