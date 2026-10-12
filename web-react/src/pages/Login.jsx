@@ -102,7 +102,7 @@ function Login() {
         </form>
 
         <Link to="/recuperar" style={styles.link}>
-          Olvide mi contrasena
+          Olvidé mi contraseña
         </Link>
       </div>
     </div>

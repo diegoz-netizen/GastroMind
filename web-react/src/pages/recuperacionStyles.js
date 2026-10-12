@@ -1,4 +1,4 @@
-// HU-04: estilos de las pantallas de recuperacion (mismos colores y medidas que Login.jsx)
+// HU-04: estilos de las pantallas de recuperación (mismos colores y medidas que Login.jsx)
 export const styles = {
   container: {
     minHeight: '100vh',

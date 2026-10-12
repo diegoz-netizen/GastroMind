@@ -21,11 +21,11 @@ function RestablecerContrasena() {
     setError('');
 
     if (nuevaContrasena.length < 6) {
-      setError('La contrasena debe tener al menos 6 caracteres.');
+      setError('La contraseña debe tener al menos 6 caracteres.');
       return;
     }
     if (nuevaContrasena !== confirmacion) {
-      setError('Las contrasenas no coinciden.');
+      setError('Las contraseñas no coinciden.');
       return;
     }
 
@@ -35,9 +35,9 @@ function RestablecerContrasena() {
       setMensaje(response.data.mensaje);
     } catch (err) {
       if (err.response && err.response.status === 400) {
-        setError('El enlace no es valido o ya caduco. Solicita uno nuevo.');
+        setError('El enlace no es válido o ya caducó. Solicita uno nuevo.');
       } else {
-        setError('No se pudo conectar con el servidor. Verifica que el backend este corriendo.');
+        setError('No se pudo conectar con el servidor. Verifica que el backend esté corriendo.');
       }
     } finally {
       setLoading(false);
@@ -49,7 +49,7 @@ function RestablecerContrasena() {
       <div style={styles.container}>
         <div style={styles.card}>
           <h1 style={styles.title}>GastroMind</h1>
-          <p style={styles.error}>El enlace no es valido. Solicita uno nuevo.</p>
+          <p style={styles.error}>El enlace no es válido. Solicita uno nuevo.</p>
           <Link to="/recuperar" style={styles.link}>
             Pedir un enlace nuevo
           </Link>
@@ -62,20 +62,20 @@ function RestablecerContrasena() {
     <div style={styles.container}>
       <div style={styles.card}>
         <h1 style={styles.title}>GastroMind</h1>
-        <h2 style={styles.subtitle}>Nueva contrasena</h2>
+        <h2 style={styles.subtitle}>Nueva contraseña</h2>
 
         {mensaje ? (
           <>
             <p style={styles.success}>{mensaje}</p>
             <Link to="/" style={styles.link}>
-              Ir a iniciar sesion
+              Ir a iniciar sesión
             </Link>
           </>
         ) : (
           <form onSubmit={handleSubmit} style={styles.form}>
             <div style={styles.field}>
               <label htmlFor="nueva" style={styles.label}>
-                Nueva contrasena
+                Nueva contraseña
               </label>
               <input
                 id="nueva"
@@ -89,7 +89,7 @@ function RestablecerContrasena() {
 
             <div style={styles.field}>
               <label htmlFor="confirmacion" style={styles.label}>
-                Repite la contrasena
+                Repite la contraseña
               </label>
               <input
                 id="confirmacion"
@@ -108,7 +108,7 @@ function RestablecerContrasena() {
               disabled={loading}
               style={{ ...styles.button, ...(loading ? styles.buttonDisabled : {}) }}
             >
-              {loading ? 'Guardando...' : 'Guardar contrasena'}
+              {loading ? 'Guardando...' : 'Guardar contraseña'}
             </button>
           </form>
         )}

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { styles } from './recuperacionStyles';
 
-// HU-04: pedir el enlace de recuperacion. El backend responde igual exista o no el correo.
+// HU-04: pedir el enlace de recuperación. El backend responde igual exista o no el correo.
 const API_URL = 'http://localhost:8080/api/auth/recuperar';
 
 function OlvideContrasena() {
@@ -28,9 +28,9 @@ function OlvideContrasena() {
       setMensaje(response.data.mensaje);
     } catch (err) {
       if (err.response && err.response.status === 400) {
-        setError('El formato del correo es invalido.');
+        setError('El formato del correo es inválido.');
       } else {
-        setError('No se pudo conectar con el servidor. Verifica que el backend este corriendo.');
+        setError('No se pudo conectar con el servidor. Verifica que el backend esté corriendo.');
       }
     } finally {
       setLoading(false);
@@ -41,12 +41,12 @@ function OlvideContrasena() {
     <div style={styles.container}>
       <div style={styles.card}>
         <h1 style={styles.title}>GastroMind</h1>
-        <h2 style={styles.subtitle}>Recuperar contrasena</h2>
+        <h2 style={styles.subtitle}>Recuperar contraseña</h2>
 
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.field}>
             <label htmlFor="correo" style={styles.label}>
-              Correo electronico
+              Correo electrónico
             </label>
             <input
               id="correo"
@@ -72,7 +72,7 @@ function OlvideContrasena() {
         </form>
 
         <Link to="/" style={styles.link}>
-          Volver a iniciar sesion
+          Volver a iniciar sesión
         </Link>
       </div>
     </div>
