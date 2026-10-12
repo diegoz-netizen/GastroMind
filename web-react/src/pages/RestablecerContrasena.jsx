@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
+import { SPRING_URL } from '../config/api';
 import { styles } from './recuperacionStyles';
 
 // HU-04: se llega desde el enlace del correo (/restablecer?token=...). El enlace caduca y es de un solo uso.
-const API_URL = 'http://localhost:8080/api/auth/restablecer';
+const API_URL = `${SPRING_URL}/api/auth/restablecer`;
 
 function RestablecerContrasena() {
   const [searchParams] = useSearchParams();

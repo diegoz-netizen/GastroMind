@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { SPRING_URL } from '../config/api';
 import { useAuth } from '../context/AuthContext';
 
-const API_URL = 'http://localhost:8080/api/auth/login';
+const API_URL = `${SPRING_URL}/api/auth/login`;
 
 function Login() {
   const [correo, setCorreo] = useState('');
