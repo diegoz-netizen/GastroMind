@@ -50,6 +50,11 @@ public class PersonalService {
         Empleado empleado = personalRepository.findByIdAndRestauranteId(id, administrador.getRestaurante().getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empleado no encontrado"));
 
+        // HL-008: un administrador no puede desactivar su propia cuenta (el restaurante podría quedar sin admin activo)
+        if (nuevoEstado == EstadoEmpleado.INACTIVO && empleado.getId().equals(administrador.getId())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "No puede desactivar su propia cuenta");
+        }
+
         String estadoAnterior = empleado.getEstado();
         if (nuevoEstado.name().equals(estadoAnterior)) {
             return EmpleadoResumen.from(empleado);

@@ -27,6 +27,7 @@ function Empleados() {
     if (status === 401) return detalle || 'Tu sesion no es valida o tu cuenta esta inactiva.';
     if (status === 403) return detalle || 'Solo un administrador activo puede gestionar el personal.';
     if (status === 404) return detalle || 'El empleado no existe en tu restaurante.';
+    if (status === 409) return detalle || 'No puedes desactivar tu propia cuenta.';
     return detalle || 'Ocurrio un error al procesar la solicitud.';
   };
 
