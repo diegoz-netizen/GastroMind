@@ -179,19 +179,29 @@ Una historia de usuario tiene que cumplir el criterio **INVEST** — en particul
 
 ---
 
-## 7. Organización del Repositorio (Monorepo)
+## 7. Organización de los Repositorios
+
+Desde el **12/10/2026** (Sprint 2), por sugerencia del docente, el proyecto usa **tres repositorios** en lugar de un monorepo. La **base de datos sigue siendo una sola PostgreSQL compartida** por Spring Boot y Django.
+
+| Repositorio | Contenido |
+|---|---|
+| [GastroMind](https://github.com/diegoz-netizen/GastroMind) (principal) | Backend Spring Boot, web React, documentación y CI |
+| [GastroMind-Django](https://github.com/diegoz-netizen/GastroMind-Django) | Backend analítico: catálogo, mermas, reportes e IA |
+| [GastroMind-Kotlin](https://github.com/diegoz-netizen/GastroMind-Kotlin) | App móvil operativa (mozo, cocinero, almacenero) |
 
 ```
-GastroMind/
-├── backend-spring/     (Spring Boot — módulo operativo)
-├── backend-django/     (Django — módulo administración/IA)
-├── app-kotlin/          (App móvil operativa)
+GastroMind/ (repo principal)
+├── backend-spring/      (Spring Boot — módulo operativo)
 ├── web-react/           (Web Admin + alternativa web operativa)
-├── docs/                (ER, backlog, planes de sprint, plan de pruebas)
-└── .github/workflows/   (CI por componente, disparado solo si cambia esa carpeta)
+├── docs/                (script SQL, datos semilla, ensayo de la demo, documentos)
+└── .github/workflows/   (CI: tests del backend, lint y build del frontend)
 ```
 
-Rama `main` protegida, todo cambio entra por Pull Request con al menos una aprobación. Convención de ramas por historia: `feature/HU-02-login`.
+**Dependencias entre repos:**
+- La **estructura de la BD** se define en `docs/script_database.sql` del repo principal. Django la usa con modelos `managed = False`, sin migraciones sobre esas tablas.
+- El **login (JWT)** lo emite Spring Boot. Django lo valida con la misma clave, y la app Kotlin lo envía en cada petición a la API de Spring.
+
+En los tres repos: rama `main` protegida, todo cambio entra por Pull Request con al menos una aprobación (también para el administrador del repo), y las ramas se borran solas al mergear. Convención de ramas por historia: `feature/HU-02-login`.
 
 ---
 
