@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 
@@ -100,6 +100,10 @@ function Login() {
             {loading ? 'Iniciando sesion...' : 'Iniciar sesion'}
           </button>
         </form>
+
+        <Link to="/recuperar" style={styles.link}>
+          Olvidé mi contraseña
+        </Link>
       </div>
     </div>
   );
@@ -180,6 +184,14 @@ const styles = {
   buttonDisabled: {
     backgroundColor: '#94c4f5',
     cursor: 'not-allowed',
+  },
+  link: {
+    display: 'block',
+    marginTop: '16px',
+    textAlign: 'center',
+    fontSize: '14px',
+    color: '#1a73e8',
+    textDecoration: 'none',
   },
 };
 
