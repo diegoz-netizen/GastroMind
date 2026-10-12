@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { SPRING_URL } from '../config/api';
 import { useAuth } from '../context/AuthContext';
 
-const API_URL = 'http://localhost:8080/api/empleados';
+const API_URL = `${SPRING_URL}/api/empleados`;
 
 const conToken = (token) => ({ headers: { Authorization: `Bearer ${token}` } });
 

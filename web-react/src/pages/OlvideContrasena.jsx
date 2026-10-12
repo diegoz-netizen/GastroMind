@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { SPRING_URL } from '../config/api';
 import { styles } from './recuperacionStyles';
 
 // HU-04: pedir el enlace de recuperación. El backend responde igual exista o no el correo.
-const API_URL = 'http://localhost:8080/api/auth/recuperar';
+const API_URL = `${SPRING_URL}/api/auth/recuperar`;
 
 function OlvideContrasena() {
   const [correo, setCorreo] = useState('');
