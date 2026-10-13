@@ -111,6 +111,19 @@ class PersonalServiceTest {
     }
 
     @Test
+    void cambiarEstado_adminSeDesactivaASiMismoDa409YNoCambiaNada() {
+        when(personalRepository.findById(1L)).thenReturn(Optional.of(admin));
+        when(personalRepository.findByIdAndRestauranteId(1L, 1L)).thenReturn(Optional.of(admin));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> personalService.cambiarEstado(1L, "INACTIVO", autenticado(1L)));
+
+        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
+        assertEquals("ACTIVO", admin.getEstado());
+        verifyNoInteractions(historialRepository);
+    }
+
+    @Test
     void cambiarEstado_estadoInvalidoDa400() {
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
                 () -> personalService.cambiarEstado(2L, "BORRADO", autenticado(1L)));
