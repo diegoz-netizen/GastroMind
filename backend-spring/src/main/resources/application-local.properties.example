@@ -9,6 +9,8 @@ spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 
 # JWT Configuration
+# secret: obligatoria, al menos 32 bytes (HS256) y la MISMA que JWT_SECRET de Django. Si falta o es corta, Spring no arranca.
+# expiration-ms: opcional, por defecto 24 h (86400000).
 gastromind.jwt.secret=TU_JWT_SECRET_AQUI
 gastromind.jwt.expiration-ms=86400000
 
