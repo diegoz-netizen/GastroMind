@@ -98,6 +98,19 @@ CREATE TABLE proveedor (
     contacto        VARCHAR(150)
 );
 
+-- ---------- PROVEEDOR_INSUMO ----------
+-- HU-22: que insumos vende cada proveedor, a que precio y en cuantos dias entrega.
+-- Con dos proveedores del mismo insumo se sugiere el de menor costo total (CA-22).
+-- Proveedor e insumo deben ser del mismo restaurante (trigger mas abajo).
+CREATE TABLE proveedor_insumo (
+    id                  SERIAL PRIMARY KEY,
+    proveedor_id        INT NOT NULL REFERENCES proveedor(id),
+    ingrediente_id      INT NOT NULL REFERENCES ingrediente(id),
+    precio_unitario     DECIMAL(10,2) NOT NULL CHECK (precio_unitario > 0),
+    tiempo_entrega_dias INT NOT NULL CHECK (tiempo_entrega_dias >= 0),
+    UNIQUE (proveedor_id, ingrediente_id)           -- un precio vigente por proveedor e insumo
+);
+
 -- ---------- MOTIVO_MERMA ----------
 -- Catalogo configurable en vez de CHECK fijo: motivos globales del sistema
 -- (restaurante_id NULL) mas motivos propios que cada restaurante puede agregar.
@@ -146,6 +159,7 @@ CREATE TABLE registro_ingreso_proveedor (
     proveedor_id        INT NOT NULL REFERENCES proveedor(id),
     ingrediente_id      INT NOT NULL REFERENCES ingrediente(id),
     lote                VARCHAR(50),
+    fecha_vencimiento   DATE,                       -- HU-16: NULL = no perecible; alerta 3 dias antes
     cantidad_recibida   DECIMAL(10,2) NOT NULL CHECK (cantidad_recibida > 0),
     costo_total         DECIMAL(10,2) NOT NULL CHECK (costo_total >= 0),
     fecha_registro      TIMESTAMP NOT NULL DEFAULT NOW()
@@ -189,6 +203,30 @@ CREATE TRIGGER trg_receta_mismo_restaurante
     BEFORE INSERT OR UPDATE ON receta_detalle
     FOR EACH ROW EXECUTE FUNCTION fn_valida_receta_mismo_restaurante();
 
+-- Mismo control para HU-22: un proveedor solo puede tener precios de insumos de su restaurante.
+CREATE OR REPLACE FUNCTION fn_valida_proveedor_insumo_mismo_restaurante()
+RETURNS TRIGGER AS $$
+DECLARE
+    restaurante_proveedor INT;
+    restaurante_ingrediente INT;
+BEGIN
+    SELECT restaurante_id INTO restaurante_proveedor
+    FROM proveedor WHERE id = NEW.proveedor_id;
+
+    SELECT restaurante_id INTO restaurante_ingrediente
+    FROM ingrediente WHERE id = NEW.ingrediente_id;
+
+    IF restaurante_proveedor IS DISTINCT FROM restaurante_ingrediente THEN
+        RAISE EXCEPTION 'El proveedor % y el insumo % pertenecen a restaurantes distintos', NEW.proveedor_id, NEW.ingrediente_id;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_proveedor_insumo_mismo_restaurante
+    BEFORE INSERT OR UPDATE ON proveedor_insumo
+    FOR EACH ROW EXECUTE FUNCTION fn_valida_proveedor_insumo_mismo_restaurante();
+
 -- NOTA IMPORTANTE: este trigger es la ultima linea de defensa, no la unica.
 -- En el backend (Spring Boot), TODA consulta debe filtrar por restaurante_id
 -- obtenido del JWT del usuario logueado -- nunca confiar solo en la BD para esto.
@@ -208,6 +246,8 @@ CREATE INDEX idx_merma_ingrediente ON registro_merma(ingrediente_id);
 CREATE INDEX idx_merma_motivo ON registro_merma(motivo_id);
 CREATE INDEX idx_merma_fecha ON registro_merma(fecha_registro);
 CREATE INDEX idx_ingreso_ingrediente ON registro_ingreso_proveedor(ingrediente_id);
+CREATE INDEX idx_ingreso_vencimiento ON registro_ingreso_proveedor(fecha_vencimiento);
+CREATE INDEX idx_proveedor_insumo_ingrediente ON proveedor_insumo(ingrediente_id);
 CREATE INDEX idx_conteo_ingrediente ON conteo_ciclico(ingrediente_id);
 
 -- ============================================================
