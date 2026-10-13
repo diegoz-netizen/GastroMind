@@ -18,7 +18,7 @@ public class JwtTokenProvider {
     private JwtProperties jwtProperties;
 
     private Key getSigningKey() {
-        return Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes());
+        return Keys.hmacShaKeyFor(jwtProperties.getSecretBytes());
     }
 
     public String generarToken(Empleado empleado) {
