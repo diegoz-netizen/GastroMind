@@ -27,6 +27,10 @@ function Dashboard() {
           </button>
         )}
 
+        <button onClick={() => navigate('/insumos')} style={styles.primaryButton}>
+          Insumos
+        </button>
+
         <button onClick={logout} style={styles.logoutButton}>
           Cerrar sesion
         </button>
