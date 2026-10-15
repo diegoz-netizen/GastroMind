@@ -3,7 +3,9 @@ package com.gastromind.backendspring.controller;
 import com.gastromind.backendspring.entity.Empleado;
 import com.gastromind.backendspring.entity.Restaurante;
 import com.gastromind.backendspring.entity.Rol;
+import com.gastromind.backendspring.exception.CodigoError;
 import com.gastromind.backendspring.service.CorreoService;
+import com.gastromind.backendspring.service.LimiteSolicitudes;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,8 +50,12 @@ class RecuperacionIntegrationTest {
     @MockitoBean
     private CorreoService correoService;
 
+    @Autowired
+    private LimiteSolicitudes limite;
+
     @BeforeEach
     void setUp() {
+        limite.limpiar();
         Restaurante restaurante = Restaurante.builder().nombre("Restaurante Test").build();
         Rol mozo = Rol.builder().nombre("MOZO").build();
         entityManager.persist(restaurante);
@@ -153,5 +159,23 @@ class RecuperacionIntegrationTest {
                         .content("{\"token\":\"" + token + "\",\"nuevaContrasena\":\"123\"}"))
                 .andExpect(status().isBadRequest());
         login("vieja123", 200);
+    }
+
+    // HL-035: el límite responde igual exista o no el correo, para no revelar cuáles están registrados
+    @Test
+    void cuartaSolicitudDelMismoCorreo_DeberiaResponder429() throws Exception {
+        for (String correo : new String[]{"ana@test.com", "nadie@test.com"}) {
+            for (int i = 0; i < 3; i++) {
+                mockMvc.perform(post("/api/auth/recuperar").contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"correo\":\"" + correo + "\"}"))
+                        .andExpect(status().isOk());
+            }
+            mockMvc.perform(post("/api/auth/recuperar").contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"correo\":\"" + correo + "\"}"))
+                    .andExpect(status().isTooManyRequests())
+                    .andExpect(jsonPath("$.error").value(CodigoError.DEMASIADAS_SOLICITUDES))
+                    .andExpect(jsonPath("$.mensaje").isString());
+        }
+        verify(correoService, times(3)).enviar(eq("ana@test.com"), anyString(), anyString());
     }
 }
