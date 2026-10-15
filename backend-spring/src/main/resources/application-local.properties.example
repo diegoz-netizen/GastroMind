@@ -4,9 +4,7 @@ spring.datasource.username=postgres
 spring.datasource.password=TU_PASSWORD_AQUI
 
 # Configuración Hibernate / JPA
-# validate: Hibernate solo comprueba que las entidades coincidan con la BD; no la cambia.
-# El esquema sale de docs/script_database.sql (BD nueva) o de docs/migraciones/ (BD existente).
-spring.jpa.hibernate.ddl-auto=validate
+# Sin ddl-auto aquí: vale el validate de application.properties (si se pone update, lo pisa).
 spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 
