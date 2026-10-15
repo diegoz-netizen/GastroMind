@@ -97,6 +97,8 @@ public class RecuperacionService {
         }
 
         empleado.setPasswordHash(passwordEncoder.encode(nuevaContrasena));
+        // HL-035: las sesiones abiertas con la contraseña anterior dejan de valer
+        empleado.setVersionToken(empleado.getVersionToken() + 1);
         recuperacion.setUsadoEn(ahora);
     }
 

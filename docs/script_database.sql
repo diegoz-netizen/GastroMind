@@ -27,7 +27,8 @@ CREATE TABLE empleado (
     pin_acceso          VARCHAR(255),              -- hash del PIN, opcional
     estado              VARCHAR(20) NOT NULL DEFAULT 'ACTIVO'
         CHECK (estado IN ('ACTIVO', 'INACTIVO')),
-    fecha_registro      TIMESTAMP NOT NULL DEFAULT NOW()
+    fecha_registro      TIMESTAMP NOT NULL DEFAULT NOW(),
+    version_token       INT NOT NULL DEFAULT 0          -- HL-035: sube al cambiar la contraseña; invalida los JWT anteriores
 );
 
 -- ---------- HISTORIAL_ESTADO_EMPLEADO (HU-03) ----------

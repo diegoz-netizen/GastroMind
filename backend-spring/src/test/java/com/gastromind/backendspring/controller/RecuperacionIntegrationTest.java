@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -117,6 +118,31 @@ class RecuperacionIntegrationTest {
                 .andExpect(jsonPath("$.mensaje").value(RecuperacionController.MENSAJE_SOLICITUD));
 
         verifyNoInteractions(correoService);
+    }
+
+    private String loginYLeerJwt(String password) throws Exception {
+        String respuesta = mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"correo\":\"ana@test.com\",\"password\":\"" + password + "\"}"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        return respuesta.split("\"token\":\"")[1].split("\"")[0];
+    }
+
+    // Ana es MOZO: con un JWT válido /api/empleados responde 403 (autenticada, sin permiso); con uno inválido, 401
+    private void usarJwt(String jwt, int estadoEsperado) throws Exception {
+        mockMvc.perform(get("/api/empleados").header("Authorization", "Bearer " + jwt))
+                .andExpect(status().is(estadoEsperado));
+    }
+
+    @Test
+    void cambiarLaContrasena_DeberiaInvalidarLosJwtAnteriores() throws Exception {
+        String jwtViejo = loginYLeerJwt("vieja123");
+        usarJwt(jwtViejo, 403);
+
+        restablecer(pedirEnlaceYLeerToken(), 200);
+
+        usarJwt(jwtViejo, 401);
+        usarJwt(loginYLeerJwt("nueva123"), 403);
     }
 
     @Test
