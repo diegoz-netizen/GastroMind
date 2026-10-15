@@ -18,12 +18,8 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        try {
-            AuthResponse response = authService.login(loginRequest);
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(401).body(e.getMessage());
-        }
+    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest loginRequest) {
+        // Credenciales inválidas o cuenta inactiva → 401 con {error, mensaje} (GlobalExceptionHandler, HL-014)
+        return ResponseEntity.ok(authService.login(loginRequest));
     }
 }
