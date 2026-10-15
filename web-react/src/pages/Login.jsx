@@ -40,9 +40,9 @@ function Login() {
         navigate('/dashboard');
       }
     } catch (err) {
-      // 401 Unauthorized: credenciales invalidas o cuenta inactiva
+      // 401 Unauthorized: credenciales invalidas o cuenta inactiva → {error, mensaje} (HL-014)
       if (err.response && err.response.status === 401) {
-        setError(err.response.data);
+        setError(err.response.data?.mensaje || 'Credenciales invalidas');
       } else {
         setError('No se pudo conectar con el servidor. Verifica que el backend este corriendo.');
       }
