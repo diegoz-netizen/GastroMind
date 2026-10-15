@@ -44,7 +44,7 @@ function Insumos() {
     const { status, data } = err.response;
     if (status === 401) return 'Tu sesion no es valida o tu cuenta esta inactiva. Vuelve a iniciar sesion.';
     if (status === 403) return 'Solo un administrador o el encargado de almacen puede registrar insumos.';
-    return data?.detail || 'Ocurrio un error al procesar la solicitud.';
+    return data?.mensaje || 'Ocurrio un error al procesar la solicitud.';
   };
 
   useEffect(() => {
@@ -90,9 +90,12 @@ function Insumos() {
       setExito(`Insumo "${response.data.nombre}" registrado.`);
       setForm(FORM_VACIO);
     } catch (err) {
-      // 400 de CA-05: Django devuelve { campo: [mensajes] } y se muestra debajo de cada campo
-      if (err.response?.status === 400 && !err.response.data?.detail) {
-        setErroresCampo(err.response.data);
+      // 400 de CA-05: Django devuelve {error: 'VALIDACION', mensaje, campos: {campo: mensaje}} (HL-014)
+      if (err.response?.data?.error === 'VALIDACION') {
+        const campos = err.response.data.campos || {};
+        setErroresCampo(campos);
+        // Error de validación sin campo concreto: se muestra arriba
+        if (Object.keys(campos).length === 0) setError(err.response.data.mensaje);
       } else {
         setError(mensajeDeError(err));
       }
@@ -107,7 +110,7 @@ function Insumos() {
   };
 
   const errorDe = (campo) =>
-    erroresCampo[campo] && <span style={styles.fieldError}>{[].concat(erroresCampo[campo]).join(' ')}</span>;
+    erroresCampo[campo] && <span style={styles.fieldError}>{erroresCampo[campo]}</span>;
 
   return (
     <div style={styles.container}>
@@ -198,7 +201,6 @@ function Insumos() {
                 </>
               )}
             </div>
-            {errorDe('non_field_errors')}
             <button type="submit" disabled={guardando}
               style={{ ...styles.primaryButton, ...(guardando ? styles.buttonDisabled : {}) }}>
               {guardando ? 'Guardando...' : 'Registrar'}
