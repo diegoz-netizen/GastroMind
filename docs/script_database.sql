@@ -30,6 +30,29 @@ CREATE TABLE empleado (
     fecha_registro      TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+-- ---------- HISTORIAL_ESTADO_EMPLEADO ----------
+-- HU-03: cada activación o desactivación de un empleado, quién la hizo y cuándo (UTC).
+CREATE TABLE historial_estado_empleado (
+    id              SERIAL PRIMARY KEY,
+    empleado_id     INT NOT NULL REFERENCES empleado(id),
+    estado_anterior VARCHAR(20) NOT NULL,
+    estado_nuevo    VARCHAR(20) NOT NULL,
+    cambiado_por    INT NOT NULL REFERENCES empleado(id),
+    fecha_cambio    TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- ---------- TOKEN_RECUPERACION ----------
+-- HU-04: enlace de recuperación de contraseña. Se guarda el hash SHA-256 (nunca el token),
+-- caduca a los 15 min (CA-04) y es de un solo uso (usado_en).
+CREATE TABLE token_recuperacion (
+    id              SERIAL PRIMARY KEY,
+    empleado_id     INT NOT NULL REFERENCES empleado(id),
+    token_hash      VARCHAR(64) NOT NULL UNIQUE,
+    expira_en       TIMESTAMP NOT NULL,
+    usado_en        TIMESTAMP,
+    creado_en       TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
 -- ---------- CATEGORIA ----------
 CREATE TABLE categoria (
     id              SERIAL PRIMARY KEY,
@@ -235,6 +258,8 @@ CREATE TRIGGER trg_proveedor_insumo_mismo_restaurante
 -- ÍNDICES recomendados para las FKs más consultadas
 -- ============================================================
 CREATE INDEX idx_empleado_rol ON empleado(rol_id);
+CREATE INDEX idx_historial_empleado ON historial_estado_empleado(empleado_id);
+CREATE INDEX idx_token_recuperacion_empleado ON token_recuperacion(empleado_id);
 CREATE INDEX idx_ingrediente_restaurante ON ingrediente(restaurante_id);
 CREATE INDEX idx_proveedor_restaurante ON proveedor(restaurante_id);
 CREATE INDEX idx_producto_categoria ON producto(categoria_id);

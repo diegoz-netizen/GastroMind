@@ -3,6 +3,8 @@ package com.gastromind.backendspring.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "empleado")
@@ -15,6 +17,7 @@ public class Empleado {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @JdbcTypeCode(SqlTypes.INTEGER) // la columna es SERIAL (INT) en script_database.sql
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)

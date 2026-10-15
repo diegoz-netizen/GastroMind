@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /**
  * HU-05: insumo del almacén (tabla ingrediente de script_database.sql).
@@ -25,6 +27,7 @@ public class Ingrediente {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @JdbcTypeCode(SqlTypes.INTEGER) // la columna es SERIAL (INT) en script_database.sql
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
