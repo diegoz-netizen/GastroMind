@@ -7,6 +7,8 @@ import com.gastromind.backendspring.entity.Rol;
 import com.gastromind.backendspring.repository.EmpleadoRepository;
 import com.gastromind.backendspring.repository.RolRepository;
 import com.gastromind.backendspring.service.EmpleadoService;
+// Importa EmailService si tu compañero ya lo integró
+// import com.gastromind.backendspring.service.EmailService;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,7 @@ public class EmpleadoServiceImpl implements EmpleadoService {
     private final EmpleadoRepository empleadoRepository;
     private final RolRepository rolRepository;
     private final PasswordEncoder passwordEncoder;
+    // private final EmailService emailService; // Descomentar si aplica
 
     public EmpleadoServiceImpl(EmpleadoRepository empleadoRepository,
                                RolRepository rolRepository,
@@ -63,13 +66,26 @@ public class EmpleadoServiceImpl implements EmpleadoService {
         Empleado nuevo = new Empleado();
         nuevo.setNombreCompleto(request.nombreCompleto());
         nuevo.setCorreo(request.correo());
-        nuevo.setPasswordHash(passwordEncoder.encode(request.password())); // Usamos setPasswordHash
-        nuevo.setPinAcceso(request.pinAcceso());
+
+        // HASH OBLIGATORIO DE PASSWORD Y PIN
+        nuevo.setPasswordHash(passwordEncoder.encode(request.password()));
+        if (request.pinAcceso() != null && !request.pinAcceso().isBlank()) {
+            nuevo.setPinAcceso(passwordEncoder.encode(request.pinAcceso()));
+        }
+
         nuevo.setRol(rol);
         nuevo.setRestaurante(admin.getRestaurante());
-        nuevo.setEstado("ACTIVO"); // Usamos setEstado("ACTIVO")
+        nuevo.setEstado("ACTIVO");
 
         Empleado guardado = empleadoRepository.save(nuevo);
+
+        /* Si tu compañero implementó el envío del correo de bienvenida:
+        try {
+            emailService.enviarCorreoBienvenida(guardado.getCorreo(), guardado.getNombreCompleto(), request.password(), request.pinAcceso());
+        } catch (Exception e) {
+            // Log de advertencia sin interrumpir la creación
+        }
+        */
 
         return new EmpleadoResponse(
                 guardado.getId(),
