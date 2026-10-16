@@ -84,13 +84,19 @@ public class EmpleadoServiceImpl implements EmpleadoService {
 
         Empleado guardado = empleadoRepository.save(nuevo);
 
-        // Bienvenida sin credenciales: la contraseña la entrega el admin y, si la olvida, usa HU-04
+        // CA-01: la bienvenida lleva las credenciales iniciales; se pide cambiarlas con HU-04
+        String pin = request.pinAcceso() != null && !request.pinAcceso().isBlank()
+                ? "PIN de acceso: " + request.pinAcceso() + "\n"
+                : "";
         try {
             correoService.enviar(guardado.getCorreo(), "GastroMind - Bienvenido",
                     "Hola " + guardado.getNombreCompleto() + ",\n\n"
-                            + "Ya tienes cuenta en GastroMind como " + rol.getNombre() + ".\n"
-                            + "Inicia sesión con este correo y la contraseña que te dio tu administrador.\n"
-                            + "Si la olvidas, usa \"¿Olvidaste tu contraseña?\" en la pantalla de inicio.");
+                            + "Ya tienes cuenta en GastroMind como " + rol.getNombre() + ".\n\n"
+                            + "Tus credenciales iniciales:\n"
+                            + "Correo: " + guardado.getCorreo() + "\n"
+                            + "Contraseña: " + request.password() + "\n"
+                            + pin + "\n"
+                            + "Por seguridad, cámbiala con \"¿Olvidaste tu contraseña?\" en la pantalla de inicio.");
         } catch (RuntimeException e) {
             // El empleado ya quedó registrado: un fallo del correo no cambia la respuesta
             log.error("No se pudo enviar el correo de bienvenida al empleado {}", guardado.getId(), e);

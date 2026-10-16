@@ -180,7 +180,7 @@ class EmpleadoServiceTest {
     }
 
     @Test
-    void registrarEmpleado_EnviaBienvenidaSinCredenciales() {
+    void registrarEmpleado_EnviaBienvenidaConCredencialesIniciales() {
         prepararRegistroValido();
 
         empleadoService.registrarEmpleado(requestValido(), "1");
@@ -189,8 +189,9 @@ class EmpleadoServiceTest {
         verify(correoService).enviar(eq("carlos@restaurante.com"), anyString(), cuerpo.capture());
         assertTrue(cuerpo.getValue().contains("Carlos Perez"));
         assertTrue(cuerpo.getValue().contains("COCINERO"));
-        assertFalse(cuerpo.getValue().contains("password123"));
-        assertFalse(cuerpo.getValue().contains("1234"));
+        assertTrue(cuerpo.getValue().contains("carlos@restaurante.com"));
+        assertTrue(cuerpo.getValue().contains("password123"));
+        assertTrue(cuerpo.getValue().contains("PIN de acceso: 1234"));
     }
 
     @Test
