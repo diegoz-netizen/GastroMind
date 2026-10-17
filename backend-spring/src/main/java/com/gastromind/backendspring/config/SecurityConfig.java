@@ -1,9 +1,9 @@
 package com.gastromind.backendspring.config;
 
 import com.gastromind.backendspring.security.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -11,11 +11,11 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.util.List;
 
@@ -24,9 +24,13 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final HandlerExceptionResolver resolver;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    // HL-014: los 401/403 de Spring Security pasan por GlobalExceptionHandler, igual que los demás errores
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
+                          @Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.resolver = resolver;
     }
 
     @Bean
@@ -40,7 +44,9 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(ex -> ex.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, e) -> resolver.resolveException(request, response, null, e))
+                        .accessDeniedHandler((request, response, e) -> resolver.resolveException(request, response, null, e)))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()

@@ -23,7 +23,7 @@ function Empleados() {
       return 'No se pudo conectar con el servidor. Verifica que el backend este corriendo.';
     }
     const { status, data } = err.response;
-    const detalle = typeof data === 'string' ? data : data?.message;
+    const detalle = data?.mensaje; // formato comun {error, mensaje} (HL-014)
     if (status === 401) return detalle || 'Tu sesion no es valida o tu cuenta esta inactiva.';
     if (status === 403) return detalle || 'Solo un administrador activo puede gestionar el personal.';
     if (status === 404) return detalle || 'El empleado no existe en tu restaurante.';

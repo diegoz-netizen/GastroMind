@@ -24,6 +24,16 @@ Detalle en la sección 7 del [Documento Técnico](docs/GastroMind%20—%20Docume
 - **Web:** ver [`web-react/README.md`](web-react/README.md).
 - **Ensayo de la demo:** `bash docs/ensayo_demo.sh`.
 
+## Formato de errores (HL-014)
+
+Spring y Django responden todos los errores igual (`GlobalExceptionHandler` aquí, `config/errores.py` en GastroMind-Django):
+
+```json
+{"error": "VALIDACION", "mensaje": "Hay campos con errores.", "campos": {"correo": "El formato del correo es inválido"}}
+```
+
+`error` es uno de: `VALIDACION` (400, con `campos`) · `SOLICITUD_INVALIDA` (400) · `NO_AUTENTICADO` (401) · `SIN_PERMISO` (403) · `NO_ENCONTRADO` (404) · `METODO_NO_PERMITIDO` (405) · `CONFLICTO` (409) · `DEMASIADAS_SOLICITUDES` (429, límite de `/api/auth/recuperar`) · `ERROR_INTERNO` (500, sin detalles internos). Las pantallas muestran `mensaje` y, en los de validación, cada texto de `campos` debajo de su campo.
+
 ## Flujo de trabajo
 
 Una rama por tarea (`feature/HU-xx-...`), Pull Request a `main` con 1 aprobación de otro integrante y merge con *Create a merge commit*. `main` está protegida en los tres repos.

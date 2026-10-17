@@ -15,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 
@@ -119,11 +120,11 @@ class AuthServiceTest {
                 .thenReturn(Optional.empty());
 
         // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
             authService.login(request);
         });
 
-        assertEquals("Credenciales inválidas", exception.getMessage());
+        assertEquals("Credenciales inválidas", exception.getReason());
         verify(empleadoRepository).findByCorreo("nocoincide@test.com");
         verify(passwordEncoder, never()).matches(any(), any());
     }
@@ -141,11 +142,11 @@ class AuthServiceTest {
                 .thenReturn(false);
 
         // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
             authService.login(request);
         });
 
-        assertEquals("Credenciales inválidas", exception.getMessage());
+        assertEquals("Credenciales inválidas", exception.getReason());
         verify(empleadoRepository).findByCorreo("juan@test.com");
         verify(passwordEncoder).matches("passwordIncorrecta", empleadoActivo.getPasswordHash());
         verify(tokenProvider, never()).generarToken(any());
@@ -162,11 +163,11 @@ class AuthServiceTest {
                 .thenReturn(Optional.of(empleadoInactivo));
 
         // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
             authService.login(request);
         });
 
-        assertTrue(exception.getMessage().contains("inactiva"));
+        assertTrue(exception.getReason().contains("inactiva"));
         verify(empleadoRepository).findByCorreo("maria@test.com");
         verify(passwordEncoder, never()).matches(any(), any());
         verify(tokenProvider, never()).generarToken(any());
@@ -183,11 +184,11 @@ class AuthServiceTest {
                 .thenReturn(Optional.of(empleadoInactivo));
 
         // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
             authService.login(request);
         });
 
-        assertEquals("Su cuenta se encuentra inactiva. Contacte al administrador.", exception.getMessage());
+        assertEquals("Su cuenta se encuentra inactiva. Contacte al administrador.", exception.getReason());
 
         // Verificar que NUNCA se verifica la contraseña del usuario inactivo
         verify(passwordEncoder, never()).matches(anyString(), anyString());
